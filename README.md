@@ -1,19 +1,26 @@
-# WM8960 driver for RaspberryPi
+# Tagtagtag sound card driver for RaspberryPi
 
-Pristine WM8960 Linux driver directly taken from Linux source tree.
-Based on d2912cb15bdda8ba4a5dd73396ad62641af2f520 commit of [wm8960.c](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.c) and [wm8960.h](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.h) files.
+Sound card driver for Nabaztag and Nabaztag:tag Raspberry Pi HAT "Tagtagtag" 2019 card, v4.3 featuring:
 
-Compatible with recent versions of Raspbian (with kernel version > 4.18, e.g. Raspbian Buster).
+- a WM8960 codec driving Nabaztag's 8Ω mono speaker on right output
+- a MAX9759ETE+T amplifier plugged on WM8960's headphone output (merging left and right) and driving Nabaztag:tag's 4Ω speaker, controlled by GPIOs 7 (/SHDN) and 8 (/MUTE)
+- a line out plug detect on GPIO 25 (Nabaztag:tag only, and if user actually plugged line out)
+- a physical volume button on GPIO 22 and 27.
 
-## Datasheet
+WM8960 codec is pristine linux codec based on d2912cb15bdda8ba4a5dd73396ad62641af2f520 commit of [wm8960.c](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.c) and [wm8960.h](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.h) files.
 
-WM8960's datasheet can be found here:
-https://statics.cirrus.com/pubs/proDatasheet/WM8960_v4.4.pdf
+MAX9759 codec has been patched to make gain GPIOs optional.
+
+## Datasheets
+
+- WM8960: https://statics.cirrus.com/pubs/proDatasheet/WM8960_v4.4.pdf
+- MAX9759ETE+T: https://datasheets.maximintegrated.com/en/ds/MAX9759.pdf
+
+Sound card schematics will be published on https://github.com/nabaztag2018/hardware
 
 ## Installation
 
 Clone source code.
-Optionally edit overlay file to suit your hardware.
 Compile and install with
 
     make
@@ -24,27 +31,14 @@ Makefile will automatically edit /boot/config.txt and add/enable if required the
     dtparam=i2c_arm=on
     dtoverlay=i2s-mmap
     dtparam=i2s=on
-    dtoverlay=wm8960
+    dtoverlay=tagtagtag-sound
 
 You might want to review changes before rebooting.
 
-After reboot, edit mixer settings with alsamixer. In particular you will probably want to enable switches "Left Output Mixer PCM" and "Right Output Mixer PCM" (cf schema on page 1 of datasheet) and push up the Headphone or Speaker volumes.
+Reboot.
 
-## Overlay
+Driver currently lacks default ALSA settings and sound will not play unless some switches are enabled:
+- "Left Output Mixer PCM"
+- "Right Output Mixer PCM"
 
-wm8960 is our own overlay. It defines an ALSA sound card using built-in simple-sound-card driver and based on WM8960 codec.
-It is derived from https://github.com/respeaker/seeed-voicecard/blob/master/seeed-2mic-voicecard-overlay.dts
-
-It defines the following overrides:
-- `mclk_frequency` clock frequency is set to 12 MHz. However, the driver does not use the value as the WM8960 is being used in slave mode (RaspberryPi generates the necessary bit clock) and therefore the driver does not need to know the master clock frequency.
-- `alsaname` defines the name of the card and defaults to wm8960.
-
-For example, you can change ALSA name with the following line in `/boot/config.txt`:
-
-    dtoverlay=wm8960,alsaname=mycard
-
-## Known limitations
-
-- Some configuration switches are not exposed (e.g. MICBIAS level).
-- WM8960 can play sounds at 12 kHz and 24 kHz yet these frequencies are not reported as available. This is a Linux/ALSA limitation and would require additional code. ALSA plug interface will do the necessary conversion to 48 kHz.
-
+Volume should be pushed up as well (Headphone for Tagtag or Speaker for Tag).

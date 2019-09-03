@@ -1,0 +1,122 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2708";
+
+	fragment@0 {
+		target = <&gpio>;
+		__overlay__ {
+			gpio_max9759_shutdown_pin: gpio_max9759_shutdown_pin@7 {
+				brcm,pins = <7>;
+				brcm,function = <1>;	// out
+			};
+			gpio_max9759_mute_pin: gpio_max9759_mute_pin@8 {
+				brcm,pins = <8>;
+				brcm,function = <1>;	// out
+			};
+			gpio_line_out_detect_pin: gpio_line_out_detect_pin@25 {
+				brcm,pins = <25>;
+				brcm,function = <0>;	// in
+			};
+			gpio_physical_volume_1_pin: gpio_physical_volume_1_pin@22 {
+				brcm,pins = <22>;
+				brcm,function = <0>;	// in
+			};
+			gpio_physical_volume_2_pin: gpio_physical_volume_2_pin@27 {
+				brcm,pins = <27>;
+				brcm,function = <0>;	// in
+			};
+		};
+	};
+
+    fragment@1 {
+        target = <&i2s>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+    fragment@2 {
+        target-path="/";
+        __overlay__ {
+            wm8960_mclk: wm8960_mclk {
+                compatible = "fixed-clock";
+                #clock-cells = <0>;
+                clock-frequency = <12000000>;
+            };
+        };
+    };
+    fragment@3 {
+        target = <&i2c1>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            wm8960: wm8960{
+                compatible = "wlf,wm8960";
+                reg = <0x1a>;
+                #sound-dai-cells = <0>;
+                AVDD-supply = <&vdd_5v0_reg>;
+                DVDD-supply = <&vdd_3v3_reg>;
+            };
+        };
+    };
+    fragment@4 {
+        target-path="/";
+        __overlay__ {
+            max9759: analog-amplifier {
+                compatible = "maxim,max9759";
+                shutdown-gpios = <&gpio 7 1>;
+                mute-gpios = <&gpio 8 1>;
+
+                // Declare a single pinctrl state (referencing the one declared above) and name it
+                // default, so it is activated automatically.
+                pinctrl-names = "default";
+                pinctrl-0 = <&gpio_max9759_shutdown_pin &gpio_max9759_mute_pin>;
+            };
+        };
+    };
+    fragment@5 {
+        target = <&sound>;
+        wm8960_card: __overlay__ {
+            compatible = "simple-audio-card";
+            simple-audio-card,format = "i2s";
+            simple-audio-card,name = "tagtagtag-sound"; 
+            status = "okay";
+            simple-audio-card,widgets =
+                "Microphone", "Onboard Left Microphone",
+                "Microphone", "Onboard Right Microphone",
+                "Microphone", "External Microphone",
+                "Headphone", "Headphone Jack",
+                "Speaker", "Speaker (tag)",
+                "Speaker", "Speaker (tagtag)";
+            simple-audio-card,routing =
+                "Headphone Jack", "OUT3",
+                // On tag, speaker is routed from right channel of speaker
+                "Speaker (tag)", "SPK_RP",
+                "Speaker (tag)", "SPK_RN",
+                // On tagtag, left and right channels for headphones are merged
+                // and are routed to Speaker through amplifier.
+                "INL", "HP_L",
+                "INR", "HP_R",
+                "Speaker (tagtag)", "OUTL",
+                "Speaker (tagtag)", "OUTR",
+                "LINPUT1", "Onboard Left Microphone",
+                "RINPUT1", "Onboard Right Microphone",
+                "LINPUT1", "External Microphone";
+            simple-audio-card,aux-devs = <&max9759>;
+            simple-audio-card,cpu {
+                sound-dai = <&i2s>;
+            };
+            dailink0_slave: simple-audio-card,codec {
+                sound-dai = <&wm8960>;
+                clocks = <&wm8960_mclk>;
+                clock-names = "mclk";
+            };
+        };
+    };
+    __overrides__ {
+        alsaname = <&wm8960_card>,"simple-audio-card,name";
+    };
+};
