@@ -67,6 +67,9 @@ static int speaker_gain_control_put(struct snd_kcontrol *kcontrol,
 	if (ucontrol->value.integer.value[0] > 3)
 		return -EINVAL;
 
+	if (priv->gpiod_gain == NULL && ucontrol->value.integer.value[0] != priv->gain)
+		return -EINVAL;
+
 	priv->gain = ucontrol->value.integer.value[0];
 
 	/* G1 */
@@ -111,6 +114,11 @@ static const struct snd_kcontrol_new max9759_dapm_controls[] = {
 			    speaker_mute_get, speaker_mute_put),
 };
 
+static const struct snd_kcontrol_new max9759_dapm_controls_no_gain[] = {
+	SOC_SINGLE_BOOL_EXT("Playback Switch", 0,
+			    speaker_mute_get, speaker_mute_put),
+};
+
 static const struct snd_soc_dapm_widget max9759_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("INL"),
 	SND_SOC_DAPM_INPUT("INR"),
@@ -136,9 +144,19 @@ static const struct snd_soc_component_driver max9759_component_driver = {
 	.num_dapm_routes	= ARRAY_SIZE(max9759_dapm_routes),
 };
 
+static const struct snd_soc_component_driver max9759_component_driver_no_gain = {
+	.controls		= max9759_dapm_controls_no_gain,
+	.num_controls		= ARRAY_SIZE(max9759_dapm_controls_no_gain),
+	.dapm_widgets		= max9759_dapm_widgets,
+	.num_dapm_widgets	= ARRAY_SIZE(max9759_dapm_widgets),
+	.dapm_routes		= max9759_dapm_routes,
+	.num_dapm_routes	= ARRAY_SIZE(max9759_dapm_routes),
+};
+
 static int max9759_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	const struct snd_soc_component_driver* driver = &max9759_component_driver;
 	struct max9759 *priv;
 	int err;
 
@@ -168,20 +186,24 @@ static int max9759_probe(struct platform_device *pdev)
 	priv->gpiod_gain = devm_gpiod_get_array(dev, "gain", GPIOD_OUT_HIGH);
 	if (IS_ERR(priv->gpiod_gain)) {
 		err = PTR_ERR(priv->gpiod_gain);
-		if (err != -EPROBE_DEFER)
-			dev_err(dev, "Failed to get 'gain' gpios: %d", err);
-		return err;
+		if (err == -ENOENT) {
+			priv->gpiod_gain = NULL;
+			driver = &max9759_component_driver_no_gain;
+		} else {
+			if (err != -EPROBE_DEFER)
+				dev_err(dev, "Failed to get 'gain' gpios: %d", err);
+			return err;
+		}
 	}
 	priv->gain = 0;
 
-	if (priv->gpiod_gain->ndescs != 2) {
+	if (priv->gpiod_gain != NULL && priv->gpiod_gain->ndescs != 2) {
 		dev_err(dev, "Invalid 'gain' gpios count: %d",
 			priv->gpiod_gain->ndescs);
 		return -EINVAL;
 	}
 
-	return devm_snd_soc_register_component(dev, &max9759_component_driver,
-					       NULL, 0);
+	return devm_snd_soc_register_component(dev, driver, NULL, 0);
 }
 
 #ifdef CONFIG_OF
