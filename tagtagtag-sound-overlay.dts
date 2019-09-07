@@ -104,7 +104,8 @@
                 "Speaker (tagtag)", "OUTR",
                 "LINPUT1", "Onboard Left Microphone",
                 "RINPUT1", "Onboard Right Microphone",
-                "LINPUT1", "External Microphone";
+                "LINPUT1", "External Microphone",
+                "LINPUT2", "External Microphone";
             simple-audio-card,aux-devs = <&max9759>;
             simple-audio-card,cpu {
                 sound-dai = <&i2s>;
