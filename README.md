@@ -33,12 +33,10 @@ Makefile will automatically edit /boot/config.txt and add/enable if required the
     dtparam=i2s=on
     dtoverlay=tagtagtag-sound
 
+Makefile will also reset card's ALSA Mixer settings to defaut values.
+
 You might want to review changes before rebooting.
 
 Reboot.
 
-Driver currently lacks default ALSA settings and sound will not play unless some switches are enabled:
-- "Left Output Mixer PCM"
-- "Right Output Mixer PCM"
-
-Volume should be pushed up as well (Headphone for Tagtag or Speaker for Tag).
+Volumes are reset to low values (as per ALSA policy) and should probably be pushed up.

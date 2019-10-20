@@ -27,5 +27,7 @@ install: snd-soc-wm8960.ko snd-soc-max9759.ko tagtagtag-sound.dtbo
 	grep -q -E "^dtparam=i2s=on" /boot/config.txt || printf "dtparam=i2s=on\n" >> /boot/config.txt
 	sed /boot/config.txt -i -e "s/^#dtoverlay=tagtagtag-sound/dtoverlay=tagtagtag-sound/"
 	grep -q -E "^dtoverlay=tagtagtag-sound" /boot/config.txt || printf "dtoverlay=tagtagtag-sound\n" >> /boot/config.txt
+	alsactl -i /usr/share/alsa/init/default init tagtagtagsound
+	alsactl store
 
 .PHONY: all clean install
