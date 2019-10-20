@@ -11,6 +11,8 @@ WM8960 codec is pristine linux codec based on d2912cb15bdda8ba4a5dd73396ad62641a
 
 MAX9759 codec has been patched to make gain GPIOs optional.
 
+Line-out and volume button GPIOs are currently not handled by this driver.
+
 ## Datasheets
 
 - WM8960: https://statics.cirrus.com/pubs/proDatasheet/WM8960_v4.4.pdf
