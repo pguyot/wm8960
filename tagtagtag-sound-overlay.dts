@@ -88,11 +88,11 @@
                 "Microphone", "Onboard Left Microphone",
                 "Microphone", "Onboard Right Microphone",
                 "Microphone", "External Microphone",
-                "Headphone", "Headphone Jack",
+                "Headphone", "Headphones",
                 "Speaker", "Speaker (tag)",
                 "Speaker", "Speaker (tagtag)";
             simple-audio-card,routing =
-                "Headphone Jack", "OUT3",
+                "Headphones", "OUT3",
                 // On tag, speaker is routed from right channel of speaker
                 "Speaker (tag)", "SPK_RP",
                 "Speaker (tag)", "SPK_RN",
@@ -107,6 +107,9 @@
                 "LINPUT1", "External Microphone",
                 "LINPUT2", "External Microphone";
             simple-audio-card,aux-devs = <&max9759>;
+            simple-audio-card,hp-det-gpio = <&gpio 25 0>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&gpio_line_out_detect_pin>;
             simple-audio-card,cpu {
                 sound-dai = <&i2s>;
             };
