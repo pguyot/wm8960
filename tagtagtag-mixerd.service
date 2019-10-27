@@ -1,0 +1,14 @@
+[Unit]
+Description=Tagtagtag Sound Mixer Daemon
+StartLimitIntervalSec=0
+
+[Service]
+Type=forking
+Restart=always
+RestartSec=1
+User=root
+ExecStart=/usr/local/sbin/tagtagtag-mixerd -d
+PIDFile=/run/tagtagtag-mixerd.pid
+
+[Install]
+WantedBy=multi-user.target

@@ -35,6 +35,8 @@
 *.i*86
 *.x86_64
 *.hex
+tagtagtag-mixerd
+tagtagtag-mixerd-test
 
 # Debug files
 *.dSYM/

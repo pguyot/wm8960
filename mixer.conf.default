@@ -1,0 +1,11 @@
+; tagtagtag-mixerd configuration file
+; configuration file is reloaded when daemon receives USR1
+
+debug=0
+; debug=1
+
+tag-speaker-base=121
+tagtag-speaker-base=121
+speaker-high=249
+speaker-low=227
+headphone=227

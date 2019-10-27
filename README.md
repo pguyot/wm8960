@@ -11,7 +11,8 @@ WM8960 codec is pristine linux codec based on d2912cb15bdda8ba4a5dd73396ad62641a
 
 MAX9759 codec has been patched to make gain GPIOs optional.
 
-Line-out and volume button GPIOs are currently not handled by this driver.
+Volume button is handled by an additional driver exposing GPIOs as ALSA switches.
+Line-out and volume button are handled by a separate daemon that modifies sound volumes.
 
 ## Datasheets
 
@@ -41,4 +42,6 @@ You might want to review changes before rebooting.
 
 Reboot.
 
-Volumes are reset to low values (as per ALSA policy) and should probably be pushed up.
+Mixer daemon uses configuration file `/var/lib/tagtagtag-sound/mixer.conf`.
+Any change to this file is taken into account by sending a USR1 signal to the daemon.
+The pid is saved to `/run/tagtagtag-mixerd.pid`

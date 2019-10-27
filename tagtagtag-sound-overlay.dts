@@ -1,6 +1,10 @@
 /dts-v1/;
 /plugin/;
 
+/* dt-bindings/extcon/connectors.h */
+#define EXTCON_JACK_LINE_OUT 23
+#include </usr/src/linux-headers-4.19.57+/include/dt-bindings/gpio/gpio.h>
+
 / {
     compatible = "brcm,bcm2708";
 
@@ -18,6 +22,7 @@
 			gpio_line_out_detect_pin: gpio_line_out_detect_pin@25 {
 				brcm,pins = <25>;
 				brcm,function = <0>;	// in
+				brcm,pull = <2>;	// pull up
 			};
 			gpio_physical_volume_1_pin: gpio_physical_volume_1_pin@22 {
 				brcm,pins = <22>;
@@ -78,6 +83,20 @@
         };
     };
     fragment@5 {
+        target-path="/";
+        __overlay__ {
+            volumegpio: volume-button {
+                compatible = "linux,volume-gpio";
+                volume-gpios = <&gpio 22 0 &gpio 27 0>;
+
+                // Declare a single pinctrl state (referencing the one declared above) and name it
+                // default, so it is activated automatically.
+                pinctrl-names = "default";
+                pinctrl-0 = <&gpio_physical_volume_1_pin &gpio_physical_volume_2_pin>;
+            };
+        };
+    };
+    fragment@6 {
         target = <&sound>;
         wm8960_card: __overlay__ {
             compatible = "simple-audio-card";
@@ -106,7 +125,7 @@
                 "RINPUT1", "Onboard Right Microphone",
                 "LINPUT1", "External Microphone",
                 "LINPUT2", "External Microphone";
-            simple-audio-card,aux-devs = <&max9759>;
+            simple-audio-card,aux-devs = <&max9759 &volumegpio>;
             simple-audio-card,hp-det-gpio = <&gpio 25 0>;
             pinctrl-names = "default";
             pinctrl-0 = <&gpio_line_out_detect_pin>;
