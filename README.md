@@ -23,9 +23,17 @@ Sound card schematics will be published on https://github.com/nabaztag2018/hardw
 
 ## Installation
 
+Install requirements
+
+    sudo apt-get install raspberrypi-kernel-headers
+
 Clone source code.
+
+    git clone -b tagtagtag-sound https://github.com/pguyot/wm8960
+
 Compile and install with
 
+    cd wm8960
     make
     sudo make install
 
