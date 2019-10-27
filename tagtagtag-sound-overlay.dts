@@ -3,7 +3,6 @@
 
 /* dt-bindings/extcon/connectors.h */
 #define EXTCON_JACK_LINE_OUT 23
-#include </usr/src/linux-headers-4.19.57+/include/dt-bindings/gpio/gpio.h>
 
 / {
     compatible = "brcm,bcm2708";
