@@ -24,7 +24,7 @@ install: snd-soc-wm8960.ko snd-soc-max9759.ko tagtagtag-sound.dtbo tagtagtag-mix
 	install -o root -m 644 snd-soc-wm8960.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
 	install -o root -m 644 snd-soc-max9759.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
 	install -o root -m 644 snd-soc-volume-gpio.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
-	depmod -a
+	depmod -a $(kernel_version)
 	install -o root -m 644 tagtagtag-sound.dtbo /boot/overlays/
 	sed /boot/config.txt -i -e "s/^#dtparam=i2c_arm=on/dtparam=i2c_arm=on/"
 	grep -q -E "^dtparam=i2c_arm=on" /boot/config.txt || printf "dtparam=i2c_arm=on\n" >> /boot/config.txt
