@@ -34,7 +34,7 @@ install: snd-soc-wm8960.ko snd-soc-max9759.ko tagtagtag-sound.dtbo tagtagtag-mix
 	grep -q -E "^dtparam=i2s=on" /boot/config.txt || printf "dtparam=i2s=on\n" >> /boot/config.txt
 	sed /boot/config.txt -i -e "s/^#dtoverlay=tagtagtag-sound/dtoverlay=tagtagtag-sound/"
 	grep -q -E "^dtoverlay=tagtagtag-sound" /boot/config.txt || printf "dtoverlay=tagtagtag-sound\n" >> /boot/config.txt
-	install -o root -m 644 mixer.conf.default /var/lib/tagtagtag-sound/mixer.conf.default
+	install -D -o root -m 644 mixer.conf.default /var/lib/tagtagtag-sound/mixer.conf.default
 	test -e /var/lib/tagtagtag-sound/mixer.conf || install -o root -m 644 mixer.conf.default /var/lib/tagtagtag-sound/mixer.conf
 	install -o root -m 755 tagtagtag-mixerd /usr/local/sbin/tagtagtag-mixerd
 	install -o root -m 644 tagtagtag-mixerd.service /lib/systemd/system/tagtagtag-mixerd.service
