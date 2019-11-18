@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/file.h>
+#include <stdarg.h>
 
 #ifdef TEST
 #define DEBUG
@@ -20,21 +21,44 @@
 #endif
 
 #define CONFIG_FILE_PATH "/var/lib/tagtagtag-sound/mixer.conf"
-#define DEFAULT_TAG_SPEAKER_BASE        121
-#define DEFAULT_TAGTAG_SPEAKER_BASE     121
-#define DEFAULT_SPEAKER_HIGH            249
-#define DEFAULT_SPEAKER_LOW             227
-#define DEFAULT_HEADPHONE               227
+#define DEFAULT_TAG_SPEAKER_LOW         121
+#define DEFAULT_TAG_SPEAKER_HIGH        127
+#define DEFAULT_TAGTAG_SPEAKER_LOW      121
+#define DEFAULT_TAGTAG_SPEAKER_HIGH     127
+#define DEFAULT_SPEAKER_BASE            249
+#define DEFAULT_HEADPHONE_LOW           227
+#define DEFAULT_HEADPHONE_HIGH          249
+#define LINEOUT_MODE_LINEOUT            0
+#define LINEOUT_MODE_HEADPHONE          1
+#define DEFAULT_LINEOUT_MODE            LINEOUT_MODE_LINEOUT
 #define PID_FILE_PATH "/run/tagtagtag-mixerd.pid"
 
 struct config {
     int debug;
-    int tag_speaker_base;
-    int tagtag_speaker_base;
-    int speaker_high;
-    int speaker_low;
-    int headphone;
+    int tag_speaker_low;
+    int tag_speaker_high;
+    int tagtag_speaker_low;
+    int tagtag_speaker_high;
+    int speaker_base;
+    int headphone_low;
+    int headphone_high;
+    int lineout_mode;
 };
+
+static void do_log(int daemon, int debug, const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    if (daemon) {
+        if (debug) {
+            vsyslog(LOG_DEBUG | LOG_DAEMON, fmt, args);
+        }
+    } else {
+        vfprintf(stderr, fmt, args);
+    }
+
+    va_end(args);
+}
 
 static int hctl_jack_cb(snd_hctl_elem_t *elem, unsigned int mask) {
     int* jack_value = snd_hctl_elem_get_callback_private(elem);
@@ -60,15 +84,18 @@ static int hctl_button_cb(snd_hctl_elem_t *elem, unsigned int mask) {
 }
 
 static void default_values(struct config* conf) {
-    conf->debug = 0;
-    conf->tag_speaker_base = DEFAULT_TAG_SPEAKER_BASE;
-    conf->tagtag_speaker_base = DEFAULT_TAGTAG_SPEAKER_BASE;
-    conf->speaker_high = DEFAULT_SPEAKER_HIGH;
-    conf->speaker_low = DEFAULT_SPEAKER_LOW;
-    conf->headphone = DEFAULT_HEADPHONE;
+    conf->debug = 1;
+    conf->tag_speaker_low = DEFAULT_TAG_SPEAKER_LOW;
+    conf->tag_speaker_high = DEFAULT_TAG_SPEAKER_HIGH;
+    conf->tagtag_speaker_low = DEFAULT_TAGTAG_SPEAKER_LOW;
+    conf->tagtag_speaker_high = DEFAULT_TAGTAG_SPEAKER_HIGH;
+    conf->speaker_base = DEFAULT_SPEAKER_BASE;
+    conf->headphone_low = DEFAULT_HEADPHONE_LOW;
+    conf->headphone_high = DEFAULT_HEADPHONE_HIGH;
+    conf->lineout_mode = DEFAULT_LINEOUT_MODE;
 }
 
-static void load_config(struct config* conf, const char* config_file_path) {
+static void load_config(int daemon, struct config* conf, const char* config_file_path) {
     char buffer[512];
     struct config new_config = *conf;
     int valid = 0;
@@ -96,30 +123,49 @@ static void load_config(struct config* conf, const char* config_file_path) {
             if (key_len == 0 && *value != '=')
                 continue;
             if (key_len == 0 && *value != '=') {
-                if (conf->debug) {
-                    syslog(LOG_DEBUG | LOG_DAEMON, "Syntax error in configuration file %s line %i", config_file_path, line_ix);
-                }
+                do_log(daemon, conf->debug, "Syntax error in configuration file %s line %i", config_file_path, line_ix);
                 valid = 0;
                 break;
             }
             value++;
+            if (value[strlen(value) - 1] == '\n') {
+                value[strlen(value) - 1] = 0;
+            }
             if (key_len == strlen("debug") && strncmp(line, "debug", key_len) == 0) {
-                new_config.debug = strcmp(value, "true") == 0;
-            } else if (key_len == strlen("tag-speaker-base") && strncmp(line, "tag-speaker-base", key_len) == 0) {
-                new_config.tag_speaker_base = atoi(value);
-            } else if (key_len == strlen("tagtag-speaker-base") && strncmp(line, "tagtag-speaker-base", key_len) == 0) {
-                new_config.tagtag_speaker_base = atoi(value);
-            } else if (key_len == strlen("speaker-high") && strncmp(line, "speaker-high", key_len) == 0) {
-                new_config.speaker_high = atoi(value);
-            } else if (key_len == strlen("speaker-low") && strncmp(line, "speaker-low", key_len) == 0) {
-                new_config.speaker_low = atoi(value);
-            } else if (key_len == strlen("headphone") && strncmp(line, "headphone", key_len) == 0) {
-                new_config.headphone = atoi(value);
+                if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0) {
+                    new_config.debug = 1;
+                } else if (strcmp(value, "false") == 0 || strcmp(value, "0") == 0) {
+                    new_config.debug = 0;
+                } else {
+                    do_log(daemon, conf->debug, "Unknown debug value %s, ignoring", value);
+                }
+            } else if (key_len == strlen("tag-speaker-low") && strncmp(line, "tag-speaker-low", key_len) == 0) {
+                new_config.tag_speaker_low = atoi(value);
+            } else if (key_len == strlen("tag-speaker-high") && strncmp(line, "tag-speaker-high", key_len) == 0) {
+                new_config.tag_speaker_high = atoi(value);
+            } else if (key_len == strlen("tagtag-speaker-low") && strncmp(line, "tagtag-speaker-low", key_len) == 0) {
+                new_config.tagtag_speaker_low = atoi(value);
+            } else if (key_len == strlen("tagtag-speaker-high") && strncmp(line, "tagtag-speaker-high", key_len) == 0) {
+                new_config.tagtag_speaker_high = atoi(value);
+            } else if (key_len == strlen("speaker-base") && strncmp(line, "speaker-base", key_len) == 0) {
+                new_config.speaker_base = atoi(value);
+            } else if (key_len == strlen("headphone-high") && strncmp(line, "headphone-high", key_len) == 0) {
+                new_config.headphone_high = atoi(value);
+            } else if (key_len == strlen("headphone-low") && strncmp(line, "headphone-low", key_len) == 0) {
+                new_config.headphone_low = atoi(value);
+            } else if (key_len == strlen("lineout-mode") && strncmp(line, "lineout-mode", key_len) == 0) {
+                if (strcmp(value, "headphone") == 0) {
+                    new_config.lineout_mode = LINEOUT_MODE_HEADPHONE;
+                } else if (strcmp(value, "lineout") == 0) {
+                    new_config.lineout_mode = LINEOUT_MODE_LINEOUT;
+                } else {
+                    do_log(daemon, conf->debug, "Unknown lineout-mode value %s, ignoring", value);
+                }
             }
         }
         fclose(config_file);
-    } else if (conf->debug) {
-        syslog(LOG_DEBUG | LOG_DAEMON, "Could not open configuration file %s (errno=%i)", config_file_path, errno);
+    } else {
+        do_log(daemon, conf->debug, "Could not open configuration file %s (errno=%i)", config_file_path, errno);
     }
     if (valid) {
         *conf = new_config;
@@ -175,7 +221,7 @@ void setup_callbacks(snd_hctl_t *hctl, int *jack, int *buttons) {
     hctl_button_cb(elem, 0);
 }
 
-void set_volumes(snd_hctl_t *hctl, struct config* conf, int jack, int buttons[2]) {
+void set_volumes(int daemon, snd_hctl_t *hctl, struct config* conf, int jack, int buttons[2]) {
     snd_ctl_elem_id_t *id;
     snd_hctl_elem_t *elem;
     snd_ctl_elem_value_t *elem_value;
@@ -190,28 +236,34 @@ void set_volumes(snd_hctl_t *hctl, struct config* conf, int jack, int buttons[2]
     // Workaround bug in hardware.
     // Volume 1 (27)    Volume 2 (22)        Tag            TagTag
     //    0                0                 mute           medium volume
-    //    0                1                 max volume     max volume
-    //    1                0                 medium volume  mute
+    //    0                1                 max volume     mute
+    //    1                0                 medium volume  max volume
     //    1                1                        impossible
 
-    if (jack) {
+    if (jack && conf->lineout_mode == LINEOUT_MODE_HEADPHONE) {
         speaker_volume = 0;
         headphone_volume = 0;
-        playback_volume = conf->headphone;
+        if (buttons[0] == 0 && buttons[1] == 0) {
+            playback_volume = conf->headphone_low;
+        } else if (buttons[0] == 0 && buttons[1] == 1) {
+            playback_volume = 0;
+        } else if (buttons[0] == 1 && buttons[1] == 0) {
+            playback_volume = conf->headphone_high;
+        }
     } else if (buttons[0] == 0 && buttons[1] == 0) {
         speaker_volume = 0;
-        headphone_volume = conf->tagtag_speaker_base;
-        playback_volume = conf->speaker_low;
+        headphone_volume = conf->tagtag_speaker_low;
+        playback_volume = conf->speaker_base;
     } else if (buttons[0] == 0 && buttons[1] == 1) {
-        speaker_volume = conf->tag_speaker_base;
-        headphone_volume = conf->tagtag_speaker_base;
-        playback_volume = conf->speaker_high;
-    } else if (buttons[0] == 1 && buttons[1] == 0) {
-        speaker_volume = conf->tag_speaker_base;
+        speaker_volume = conf->tag_speaker_high;
         headphone_volume = 0;
-        playback_volume = conf->speaker_low;
-    } else if (conf->debug) {
-        syslog(LOG_DEBUG | LOG_DAEMON, "Unexpected button values (both are high)");
+        playback_volume = conf->speaker_base;
+    } else if (buttons[0] == 1 && buttons[1] == 0) {
+        speaker_volume = conf->tag_speaker_low;
+        headphone_volume = conf->tagtag_speaker_high;
+        playback_volume = conf->speaker_base;
+    } else {
+        do_log(daemon, conf->debug, "Unexpected button values (both are high)");
         return;
     }
 
@@ -275,8 +327,9 @@ int main(int argc, char** argv) {
     int buttons[2];
     sigset_t sigmask;
     sigset_t zeromask;
+    int daemon = 0;
     struct pollfd *fds = (struct pollfd*) malloc(0);
-    
+
     if (argc > 2 || (argc == 2 && strcmp(argv[1], "-d"))) {
         fprintf(stderr, "Usage: %s [-d]\n", argv[0]);
         return 1;
@@ -288,7 +341,7 @@ int main(int argc, char** argv) {
     pthread_sigmask(SIG_BLOCK, &sigmask, NULL);
 
     default_values(&priv);
-    load_config(&priv, CONFIG_FILE_PATH);
+    load_config(daemon, &priv, CONFIG_FILE_PATH);
     
     err = setup_hctl(&hctl);
     if (err < 0)
@@ -303,6 +356,7 @@ int main(int argc, char** argv) {
     if (argc == 2 && strcmp(argv[1], "-d") == 0) {
         int pfile_fd;
         pid_t pid;
+        daemon = 1;
         pfile_fd = open(PID_FILE_PATH, O_CREAT | O_WRONLY, 0644);
         if (pfile_fd < 0) {
             if (errno == EACCES) {
@@ -342,7 +396,7 @@ int main(int argc, char** argv) {
         unsigned short revents;
         int npolldescs;
         
-        set_volumes(hctl, &priv, jack, buttons);
+        set_volumes(daemon, hctl, &priv, jack, buttons);
         
         npolldescs = snd_hctl_poll_descriptors_count(hctl);
         num_fds = (unsigned) npolldescs;
@@ -350,7 +404,7 @@ int main(int argc, char** argv) {
         memset(fds, 0, num_fds * sizeof(struct pollfd));
         err = snd_hctl_poll_descriptors(hctl, fds, num_fds);
         if (err < 0) {
-            syslog(LOG_DEBUG | LOG_DAEMON, "Unable to get poll descriptors\n");
+            do_log(daemon, 1, "Unable to get poll descriptors\n");
             return 1;
         }
         err = ppoll(fds, num_fds, NULL, &zeromask);
@@ -358,20 +412,18 @@ int main(int argc, char** argv) {
             if (errno == EINTR) {
                 if (reload_config) {
                     reload_config = 0;
-                    if (priv.debug) {
-                        syslog(LOG_DEBUG | LOG_DAEMON, "Got USR1, reloading configuration");
-                    }
-                    load_config(&priv, CONFIG_FILE_PATH);
+                    do_log(daemon, priv.debug, "Got USR1, reloading configuration");
+                    load_config(daemon, &priv, CONFIG_FILE_PATH);
                 }
             } else {
-                syslog(LOG_DEBUG | LOG_DAEMON, "Error with poll (%i)\n", errno);
+                do_log(daemon, 1, "Error with poll (%i)\n", errno);
                 return 1;
             }
         }
 
         err = snd_hctl_poll_descriptors_revents(hctl, fds, num_fds, &revents);
         if (err < 0) {
-            syslog(LOG_DEBUG | LOG_DAEMON, "Unable to get poll revents\n");
+            do_log(daemon, 1, "Unable to get poll revents\n");
             return 1;
         }
 
@@ -392,17 +444,23 @@ int main(int argc, char** argv) {
     struct config loaded_conf;
     default_values(&default_conf);
     bzero(&loaded_conf, sizeof(loaded_conf));
-    load_config(&loaded_conf, "mixer.conf.default");
-    assert(default_conf.tag_speaker_base == DEFAULT_TAG_SPEAKER_BASE);
-    assert(loaded_conf.tag_speaker_base == DEFAULT_TAG_SPEAKER_BASE);
-    assert(default_conf.tagtag_speaker_base == DEFAULT_TAGTAG_SPEAKER_BASE);
-    assert(loaded_conf.tagtag_speaker_base == DEFAULT_TAGTAG_SPEAKER_BASE);
-    assert(default_conf.speaker_high == DEFAULT_SPEAKER_HIGH);
-    assert(loaded_conf.speaker_high == DEFAULT_SPEAKER_HIGH);
-    assert(default_conf.speaker_low == DEFAULT_SPEAKER_LOW);
-    assert(loaded_conf.speaker_low == DEFAULT_SPEAKER_LOW);
-    assert(default_conf.headphone == DEFAULT_HEADPHONE);
-    assert(loaded_conf.headphone == DEFAULT_HEADPHONE);
+    load_config(0, &loaded_conf, "mixer.conf.default");
+    assert(default_conf.tag_speaker_high == DEFAULT_TAG_SPEAKER_HIGH);
+    assert(loaded_conf.tag_speaker_high == DEFAULT_TAG_SPEAKER_HIGH);
+    assert(default_conf.tag_speaker_low == DEFAULT_TAG_SPEAKER_LOW);
+    assert(loaded_conf.tag_speaker_low == DEFAULT_TAG_SPEAKER_LOW);
+    assert(default_conf.tagtag_speaker_high == DEFAULT_TAGTAG_SPEAKER_HIGH);
+    assert(loaded_conf.tagtag_speaker_high == DEFAULT_TAGTAG_SPEAKER_HIGH);
+    assert(default_conf.tagtag_speaker_low == DEFAULT_TAGTAG_SPEAKER_LOW);
+    assert(loaded_conf.tagtag_speaker_low == DEFAULT_TAGTAG_SPEAKER_LOW);
+    assert(default_conf.speaker_base == DEFAULT_SPEAKER_BASE);
+    assert(loaded_conf.speaker_base == DEFAULT_SPEAKER_BASE);
+    assert(default_conf.headphone_high == DEFAULT_HEADPHONE_HIGH);
+    assert(loaded_conf.headphone_high == DEFAULT_HEADPHONE_HIGH);
+    assert(default_conf.headphone_low == DEFAULT_HEADPHONE_LOW);
+    assert(loaded_conf.headphone_low == DEFAULT_HEADPHONE_LOW);
+    assert(default_conf.lineout_mode == DEFAULT_LINEOUT_MODE);
+    assert(loaded_conf.lineout_mode == DEFAULT_LINEOUT_MODE);
 
     return 0;
 }

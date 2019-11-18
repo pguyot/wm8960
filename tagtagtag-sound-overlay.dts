@@ -23,12 +23,12 @@
 				brcm,function = <0>;	// in
 				brcm,pull = <2>;	// pull up
 			};
-			gpio_physical_volume_1_pin: gpio_physical_volume_1_pin@22 {
-				brcm,pins = <22>;
+			gpio_physical_volume_1_pin: gpio_physical_volume_1_pin@27 {
+				brcm,pins = <27>;
 				brcm,function = <0>;	// in
 			};
-			gpio_physical_volume_2_pin: gpio_physical_volume_2_pin@27 {
-				brcm,pins = <27>;
+			gpio_physical_volume_2_pin: gpio_physical_volume_2_pin@22 {
+				brcm,pins = <22>;
 				brcm,function = <0>;	// in
 			};
 		};
@@ -86,7 +86,7 @@
         __overlay__ {
             volumegpio: volume-button {
                 compatible = "linux,volume-gpio";
-                volume-gpios = <&gpio 22 0 &gpio 27 0>;
+                volume-gpios = <&gpio 27 0 &gpio 22 0>;
 
                 // Declare a single pinctrl state (referencing the one declared above) and name it
                 // default, so it is activated automatically.

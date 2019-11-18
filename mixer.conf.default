@@ -1,11 +1,20 @@
 ; tagtagtag-mixerd configuration file
 ; configuration file is reloaded when daemon receives USR1
 
-debug=0
-; debug=1
+debug=false
+; debug=true
 
-tag-speaker-base=121
-tagtag-speaker-base=121
-speaker-high=249
-speaker-low=227
-headphone=227
+tag-speaker-low=121
+tag-speaker-high=127
+tagtag-speaker-low=121
+tagtag-speaker-high=127
+speaker-base=249
+headphone-low=227
+headphone-high=249
+lineout-mode=lineout
+; Uncomment on Tagtag to use the lineout as a headphone plug:
+; lineout-mode=headphone
+;
+; lineout mode: line out sound is at speaker-base volume, whatever the volume button.
+; headphone mode: line out sound is at headphone high/low volume, depending on volume butotn, when jack is plugged, and speakers are muted.
+; Do not set headphone mode on tag (V1), as it would mute speakers (hardware behaves as if jack is always plugged).
