@@ -31,6 +31,9 @@
 #define LINEOUT_MODE_LINEOUT            0
 #define LINEOUT_MODE_HEADPHONE          1
 #define DEFAULT_LINEOUT_MODE            LINEOUT_MODE_LINEOUT
+#define DEFAULT_MICROPHONE_ENABLED      1
+#define DEFAULT_INPUT1_BASE             3
+#define DEFAULT_CAPTURE_BASE            39
 #define PID_FILE_PATH "/run/tagtagtag-mixerd.pid"
 
 struct config {
@@ -43,6 +46,9 @@ struct config {
     int headphone_low;
     int headphone_high;
     int lineout_mode;
+    int microphone_enabled;
+    int input1_base;
+    int capture_base;
 };
 
 static void do_log(int daemon, int debug, const char* fmt, ...) {
@@ -93,6 +99,9 @@ static void default_values(struct config* conf) {
     conf->headphone_low = DEFAULT_HEADPHONE_LOW;
     conf->headphone_high = DEFAULT_HEADPHONE_HIGH;
     conf->lineout_mode = DEFAULT_LINEOUT_MODE;
+    conf->microphone_enabled = DEFAULT_MICROPHONE_ENABLED;
+    conf->input1_base = DEFAULT_INPUT1_BASE;
+    conf->capture_base = DEFAULT_CAPTURE_BASE;
 }
 
 static void load_config(int daemon, struct config* conf, const char* config_file_path) {
@@ -161,6 +170,18 @@ static void load_config(int daemon, struct config* conf, const char* config_file
                 } else {
                     do_log(daemon, conf->debug, "Unknown lineout-mode value %s, ignoring", value);
                 }
+            } else if (key_len == strlen("microphone-enabled") && strncmp(line, "microphone-enabled", key_len) == 0) {
+                if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0) {
+                    new_config.microphone_enabled = 1;
+                } else if (strcmp(value, "false") == 0 || strcmp(value, "0") == 0) {
+                    new_config.microphone_enabled = 0;
+                } else {
+                    do_log(daemon, conf->debug, "Unknown microphone-enabled value %s, ignoring", value);
+                }
+            } else if (key_len == strlen("input1-base") && strncmp(line, "input1-base", key_len) == 0) {
+                new_config.input1_base = atoi(value);
+            } else if (key_len == strlen("capture-base") && strncmp(line, "capture-base", key_len) == 0) {
+                new_config.capture_base = atoi(value);
             }
         }
         fclose(config_file);
@@ -221,18 +242,51 @@ void setup_callbacks(snd_hctl_t *hctl, int *jack, int *buttons) {
     hctl_button_cb(elem, 0);
 }
 
-void set_volumes(int daemon, snd_hctl_t *hctl, struct config* conf, int jack, int buttons[2]) {
+typedef enum ctl_elem_value_type {
+    single_bool,
+    dual_bool,
+    single_integer,
+    dual_integer
+} ctl_elem_value_type;
+
+static void set_ctl_elem_value(snd_hctl_t *hctl, const char *name, ctl_elem_value_type val_type, int val) {
     snd_ctl_elem_id_t *id;
     snd_hctl_elem_t *elem;
     snd_ctl_elem_value_t *elem_value;
-    int speaker_volume;
-    int headphone_volume;
-    int playback_volume;
 
     snd_ctl_elem_value_alloca(&elem_value);
     snd_ctl_elem_id_alloca(&id);
     snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
-    
+
+    snd_ctl_elem_id_set_name(id, name);
+    elem = snd_hctl_find_elem(hctl, id);
+    switch (val_type) {
+        case single_bool:
+            snd_ctl_elem_value_set_boolean(elem_value, 0, val);
+            break;
+
+        case dual_bool:
+            snd_ctl_elem_value_set_boolean(elem_value, 0, val);
+            snd_ctl_elem_value_set_boolean(elem_value, 1, val);
+            break;
+
+        case single_integer:
+            snd_ctl_elem_value_set_integer(elem_value, 0, val);
+            break;
+
+        case dual_integer:
+            snd_ctl_elem_value_set_integer(elem_value, 0, val);
+            snd_ctl_elem_value_set_integer(elem_value, 1, val);
+            break;
+    }
+    snd_hctl_elem_write(elem, elem_value);
+}
+
+void set_volumes(int daemon, snd_hctl_t *hctl, struct config* conf, int jack, int buttons[2]) {
+    int speaker_volume;
+    int headphone_volume;
+    int playback_volume;
+
     // Workaround bug in hardware.
     // Volume 1 (27)    Volume 2 (22)        Tag            TagTag
     //    0                0                 mute           medium volume
@@ -267,33 +321,19 @@ void set_volumes(int daemon, snd_hctl_t *hctl, struct config* conf, int jack, in
         return;
     }
 
-    snd_ctl_elem_id_set_name(id, "Speaker Playback Volume");
-    elem = snd_hctl_find_elem(hctl, id);
-    snd_ctl_elem_value_set_integer(elem_value, 0, speaker_volume);
-    snd_ctl_elem_value_set_integer(elem_value, 1, speaker_volume);
-    snd_hctl_elem_write(elem, elem_value);
+    set_ctl_elem_value(hctl, "Speaker Playback Volume", dual_integer, speaker_volume);
+    set_ctl_elem_value(hctl, "Headphone Playback Volume", dual_integer, headphone_volume);
+    set_ctl_elem_value(hctl, "Playback Volume", dual_integer, playback_volume);
+    set_ctl_elem_value(hctl, "Mono Output Mixer Left Switch", single_bool, jack);
+    set_ctl_elem_value(hctl, "Mono Output Mixer Right Switch", single_bool, jack);
 
-    snd_ctl_elem_id_set_name(id, "Headphone Playback Volume");
-    elem = snd_hctl_find_elem(hctl, id);
-    snd_ctl_elem_value_set_integer(elem_value, 0, headphone_volume);
-    snd_ctl_elem_value_set_integer(elem_value, 1, headphone_volume);
-    snd_hctl_elem_write(elem, elem_value);
-    
-    snd_ctl_elem_id_set_name(id, "Playback Volume");
-    elem = snd_hctl_find_elem(hctl, id);
-    snd_ctl_elem_value_set_integer(elem_value, 0, playback_volume);
-    snd_ctl_elem_value_set_integer(elem_value, 1, playback_volume);
-    snd_hctl_elem_write(elem, elem_value);
-
-    snd_ctl_elem_id_set_name(id, "Mono Output Mixer Left Switch");
-    elem = snd_hctl_find_elem(hctl, id);
-    snd_ctl_elem_value_set_boolean(elem_value, 0, jack);
-    snd_hctl_elem_write(elem, elem_value);
-
-    snd_ctl_elem_id_set_name(id, "Mono Output Mixer Right Switch");
-    elem = snd_hctl_find_elem(hctl, id);
-    snd_ctl_elem_value_set_boolean(elem_value, 0, jack);
-    snd_hctl_elem_write(elem, elem_value);
+    // Input volumes
+    set_ctl_elem_value(hctl, "Left Boost Mixer LINPUT1 Switch", single_bool, conf->microphone_enabled);
+    set_ctl_elem_value(hctl, "Right Boost Mixer RINPUT1 Switch", single_bool, conf->microphone_enabled);
+    set_ctl_elem_value(hctl, "Capture Switch", dual_bool, conf->microphone_enabled);
+    set_ctl_elem_value(hctl, "Left Input Boost Mixer LINPUT1 Volume", single_integer, conf->input1_base);
+    set_ctl_elem_value(hctl, "Right Input Boost Mixer RINPUT1 Volume", single_integer, conf->input1_base);
+    set_ctl_elem_value(hctl, "Capture Volume", dual_integer, conf->capture_base);
 }
 
 static int reload_config = 0;
@@ -461,6 +501,12 @@ int main(int argc, char** argv) {
     assert(loaded_conf.headphone_low == DEFAULT_HEADPHONE_LOW);
     assert(default_conf.lineout_mode == DEFAULT_LINEOUT_MODE);
     assert(loaded_conf.lineout_mode == DEFAULT_LINEOUT_MODE);
+    assert(default_conf.microphone_enabled == DEFAULT_MICROPHONE_ENABLED);
+    assert(loaded_conf.microphone_enabled == DEFAULT_MICROPHONE_ENABLED);
+    assert(default_conf.input1_base == DEFAULT_INPUT1_BASE);
+    assert(loaded_conf.input1_base == DEFAULT_INPUT1_BASE);
+    assert(default_conf.capture_base == DEFAULT_CAPTURE_BASE);
+    assert(loaded_conf.capture_base == DEFAULT_CAPTURE_BASE);
 
     return 0;
 }
