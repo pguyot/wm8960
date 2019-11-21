@@ -334,6 +334,12 @@ void set_volumes(int daemon, snd_hctl_t *hctl, struct config* conf, int jack, in
     set_ctl_elem_value(hctl, "Left Input Boost Mixer LINPUT1 Volume", single_integer, conf->input1_base);
     set_ctl_elem_value(hctl, "Right Input Boost Mixer RINPUT1 Volume", single_integer, conf->input1_base);
     set_ctl_elem_value(hctl, "Capture Volume", dual_integer, conf->capture_base);
+
+    // Switches
+    set_ctl_elem_value(hctl, "Left Output Mixer PCM", single_bool, 1);
+    set_ctl_elem_value(hctl, "Right Output Mixer PCM", single_bool, 1);
+    set_ctl_elem_value(hctl, "Left Input Mixer Boost", single_bool, 1);
+    set_ctl_elem_value(hctl, "Right Input Mixer Boost", single_bool, 1);
 }
 
 static int reload_config = 0;
