@@ -6,9 +6,9 @@ debug=false
 
 tag-speaker-low=121
 tag-speaker-high=127
-tagtag-speaker-low=121
-tagtag-speaker-high=127
-speaker-base=249
+tagtag-speaker-low=105
+tagtag-speaker-high=112
+speaker-base=255
 headphone-low=227
 headphone-high=249
 lineout-mode=lineout
@@ -20,4 +20,4 @@ lineout-mode=lineout
 ; Do not set headphone mode on tag (V1), as it would mute speakers (hardware behaves as if jack is always plugged).
 microphone-enabled=true
 input1-base=3
-capture-base=39
+capture-base=90
