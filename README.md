@@ -25,7 +25,7 @@ Sound card schematics will be published on https://github.com/nabaztag2018/hardw
 
 Install requirements
 
-    sudo apt-get install raspberrypi-kernel-headers
+    sudo apt-get install raspberrypi-kernel-headers libasound2-dev
 
 Clone source code.
 
