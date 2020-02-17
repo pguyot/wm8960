@@ -36,7 +36,7 @@ wm8960 is our own overlay. It defines an ALSA sound card using built-in simple-s
 It is derived from https://github.com/respeaker/seeed-voicecard/blob/master/seeed-2mic-voicecard-overlay.dts
 
 It defines the following overrides:
-- `mclk_frequency` clock frequency is set to 12 MHz. However, the driver does not use the value as the WM8960 is being used in slave mode (RaspberryPi generates the necessary bit clock) and therefore the driver does not need to know the master clock frequency.
+- `mclk_frequency` clock frequency is set to 12 MHz.
 - `alsaname` defines the name of the card and defaults to wm8960.
 
 For example, you can change ALSA name with the following line in `/boot/config.txt`:
