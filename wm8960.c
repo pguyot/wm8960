@@ -1283,13 +1283,18 @@ static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 	switch (clk_id) {
 	case WM8960_SYSCLK_MCLK:
 		snd_soc_component_update_bits(component, WM8960_CLOCK1,
-					0x1, WM8960_SYSCLK_MCLK);
+					0x1, WM8960_CLKSEL_MCLK);
 		break;
 	case WM8960_SYSCLK_PLL:
 		snd_soc_component_update_bits(component, WM8960_CLOCK1,
-					0x1, WM8960_SYSCLK_PLL);
+					0x1, WM8960_CLKSEL_PLL);
 		break;
 	case WM8960_SYSCLK_AUTO:
+		/*
+		 * If it's sysclk auto mode, freq is MCLK and client doesn't need
+		 * to invoke set_pll.
+		*/
+		wm8960->freq_in = freq;
 		break;
 	default:
 		return -EINVAL;
