@@ -7,7 +7,9 @@ Sound card driver for Nabaztag and Nabaztag:tag Raspberry Pi HAT "Tagtagtag" 201
 - a line out plug detect on GPIO 25 (Nabaztag:tag only, and if user actually plugged line out)
 - a physical volume button on GPIO 22 and 27.
 
-WM8960 codec is pristine linux codec based on d2912cb15bdda8ba4a5dd73396ad62641af2f520 commit of [wm8960.c](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.c) and [wm8960.h](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.h) files.
+WM8960 codec is based from linux codec from d2912cb15bdda8ba4a5dd73396ad62641af2f520 commit of [wm8960.c](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.c) and [wm8960.h](https://github.com/torvalds/linux/blob/d2912cb15bdda8ba4a5dd73396ad62641af2f520/sound/soc/codecs/wm8960.h) files.
+
+Compared to upstream, the codec driver configures clocking in slave mode and made compatible with simple-audio-card.
 
 MAX9759 codec has been patched to make gain GPIOs optional.
 
