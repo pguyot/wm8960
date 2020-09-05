@@ -7,20 +7,20 @@ snd-soc-volume-gpio-objs := volume-gpio.o
 obj-m += snd-soc-volume-gpio.o
 dtbo-y += tagtagtag-sound.dtbo
 
-targets += $(dtbo-y)    
+targets += $(dtbo-y)
 always  := $(dtbo-y)
 kernel_img_gzip_offset := $(shell grep -m 1 -abo 'uncompression error' /boot/kernel.img | cut -d ':' -f 1)
 kernel_img_gzip_offset := $(shell expr $(kernel_img_gzip_offset) + 20)
 kernel_version := $(shell dd if=/boot/kernel.img skip=$(kernel_img_gzip_offset) iflag=skip_bytes of=/dev/stdout | zgrep -aPom1 'Linux version \K\S+')
 
 all: tagtagtag-mixerd
-	make -C /usr/src/linux-headers-$(kernel_version) M=$(PWD) modules
+	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) modules
 
 clean:
-	make -C /usr/src/linux-headers-$(kernel_version) M=$(PWD) clean
+	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) clean
 	rm -f tagtagtag-mixerd tagtagtag-mixerd-test
 
-install: snd-soc-wm8960.ko snd-soc-max9759.ko tagtagtag-sound.dtbo tagtagtag-mixerd
+install: snd-soc-wm8960.ko snd-soc-max9759.ko snd-soc-volume-gpio.ko tagtagtag-sound.dtbo tagtagtag-mixerd
 	install -o root -m 644 snd-soc-wm8960.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
 	install -o root -m 644 snd-soc-max9759.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
 	install -o root -m 644 snd-soc-volume-gpio.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/

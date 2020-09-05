@@ -1,0 +1,9 @@
+PACKAGE_NAME="wm8960"
+PACKAGE_VERSION="#MODULE_VERSION#"
+BUILT_MODULE_NAME[0]="snd-soc-wm8960"
+DEST_MODULE_LOCATION[0]="/kernel/sound/soc/codecs/"
+BUILT_MODULE_NAME[1]="snd-soc-max9759"
+DEST_MODULE_LOCATION[1]="/kernel/sound/soc/codecs/"
+BUILT_MODULE_NAME[2]="snd-soc-volume-gpio"
+DEST_MODULE_LOCATION[2]="/kernel/sound/soc/codecs/"
+AUTOINSTALL=yes

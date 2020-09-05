@@ -1,0 +1,13 @@
+Source: wm8960
+Section: unknown
+Priority: optional
+Maintainer: Guilhem Lettron <guilhem@barpilot.io>
+Build-Depends: debhelper-compat (= 13), dkms
+Standards-Version: 4.5.0
+Homepage: https://github.com/pguyot/wm8960
+Rules-Requires-Root: no
+
+Package: wm8960-dkms
+Architecture: all
+Depends: ${misc:Depends}
+Description: WM8960 driver for RaspberryPi
