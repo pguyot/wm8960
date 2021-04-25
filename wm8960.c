@@ -15,6 +15,7 @@
 #include <linux/clk.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -22,6 +23,12 @@
 #include <sound/initval.h>
 #include <sound/tlv.h>
 #include <sound/wm8960.h>
+
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
+#define snd_soc_component_read snd_soc_component_read32
+#endif
 
 #include "wm8960.h"
 
@@ -873,7 +880,11 @@ static int wm8960_hw_free(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
+static int wm8960_mute(struct snd_soc_dai *dai, int mute)
+#else
 static int wm8960_mute(struct snd_soc_dai *dai, int mute, int direction)
+#endif
 {
 	struct snd_soc_component *component = dai->component;
 
@@ -1315,7 +1326,11 @@ static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 static const struct snd_soc_dai_ops wm8960_dai_ops = {
 	.hw_params = wm8960_hw_params,
 	.hw_free = wm8960_hw_free,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
+	.digital_mute = wm8960_mute,
+#else
 	.mute_stream = wm8960_mute,
+#endif
 	.set_fmt = wm8960_set_dai_fmt,
 	.set_clkdiv = wm8960_set_dai_clkdiv,
 	.set_pll = wm8960_set_dai_pll,
