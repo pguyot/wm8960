@@ -5,6 +5,9 @@ dtbo-y += wm8960.dtbo
 
 targets += $(dtbo-y)
 always  := $(dtbo-y)
+kernel_img_gzip_offset := $(shell grep -m 1 -abo 'uncompression error' /boot/kernel.img | cut -d ':' -f 1)
+kernel_img_gzip_offset := $(shell expr $(kernel_img_gzip_offset) + 20)
+kernel_version := $(shell dd if=/boot/kernel.img skip=$(kernel_img_gzip_offset) iflag=skip_bytes of=/dev/stdout | zgrep -aPom1 'Linux version \K\S+')
 
 all:
 	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) modules
