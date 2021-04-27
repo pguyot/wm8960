@@ -23,9 +23,9 @@
 #define CONFIG_FILE_PATH "/var/lib/tagtagtag-sound/mixer.conf"
 #define DEFAULT_TAG_SPEAKER_LOW         121
 #define DEFAULT_TAG_SPEAKER_HIGH        127
-#define DEFAULT_TAGTAG_SPEAKER_LOW      121
-#define DEFAULT_TAGTAG_SPEAKER_HIGH     127
-#define DEFAULT_SPEAKER_BASE            249
+#define DEFAULT_TAGTAG_SPEAKER_LOW      110
+#define DEFAULT_TAGTAG_SPEAKER_HIGH     120
+#define DEFAULT_SPEAKER_BASE            255
 #define DEFAULT_HEADPHONE_LOW           227
 #define DEFAULT_HEADPHONE_HIGH          249
 #define LINEOUT_MODE_LINEOUT            0
@@ -33,7 +33,7 @@
 #define DEFAULT_LINEOUT_MODE            LINEOUT_MODE_LINEOUT
 #define DEFAULT_MICROPHONE_ENABLED      1
 #define DEFAULT_INPUT1_BASE             3
-#define DEFAULT_CAPTURE_BASE            39
+#define DEFAULT_CAPTURE_BASE            90
 #define PID_FILE_PATH "/run/tagtagtag-mixerd.pid"
 
 struct config {
