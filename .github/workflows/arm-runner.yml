@@ -6,22 +6,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base_image: ['raspbian_lite:2020-02-13', 'raspios_lite:2021-03-04']
+        base_image: ['raspios_lite:2021-05-07', 'raspios_lite:2021-11-08', 'dietpi:rpi_armv6_bullseye']
         cpu: [arm1176, cortex-a7]
     steps:
     - uses: actions/checkout@v2
-    - uses: pguyot/arm-runner-action@v1
+    - uses: pguyot/arm-runner-action@v2
       with:
         image_additional_mb: 1024
         base_image: ${{ matrix.base_image }}
         cpu: ${{ matrix.cpu }}
         commands: |
-            kernel_version=`apt list --installed | grep raspberrypi-kernel | awk '{ print $2 }'`
+            kernel_version=`apt list --installed | grep raspberrypi-kernel | awk '{ print $2 }' | sed -e 's|1:||g'`
             wget -q http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/raspberrypi-kernel-headers_${kernel_version}_armhf.deb
             dpkg --install raspberrypi-kernel-headers_${kernel_version}_armhf.deb
             apt-get update -y
-            apt-get install -y libasound2-dev
+            apt-get install --no-install-recommends -y libasound2-dev make gcc libc6-dev
             ls /lib/modules/*/build -la
-            echo /usr/src/linux-headers*
             make
             make test
