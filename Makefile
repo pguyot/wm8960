@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
+KERNELRELEASE ?= $(shell uname -r)
+
 snd-soc-wm8960-objs := wm8960.o
 obj-m += snd-soc-wm8960.o
 snd-soc-max9759-objs := max9759.o
@@ -9,22 +11,19 @@ dtbo-y += tagtagtag-sound.dtbo
 
 targets += $(dtbo-y)
 always  := $(dtbo-y)
-kernel_img_gzip_offset := $(shell grep -m 1 -abo 'uncompression error' /boot/kernel.img | cut -d ':' -f 1)
-kernel_img_gzip_offset := $(shell expr $(kernel_img_gzip_offset) + 20)
-kernel_version := $(shell dd if=/boot/kernel.img skip=$(kernel_img_gzip_offset) iflag=skip_bytes of=/dev/stdout | zgrep -aPom1 'Linux version \K\S+')
 
 all: tagtagtag-mixerd
-	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) modules
+	make -C /usr/src/linux-headers-$(KERNELRELEASE) M=$(shell pwd) modules
 
 clean:
-	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) clean
+	make -C /usr/src/linux-headers-$(KERNELRELEASE) M=$(shell pwd) clean
 	rm -f tagtagtag-mixerd tagtagtag-mixerd-test
 
 install: snd-soc-wm8960.ko snd-soc-max9759.ko snd-soc-volume-gpio.ko tagtagtag-sound.dtbo tagtagtag-mixerd
-	install -o root -m 644 snd-soc-wm8960.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
-	install -o root -m 644 snd-soc-max9759.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
-	install -o root -m 644 snd-soc-volume-gpio.ko /lib/modules/$(kernel_version)/kernel/sound/soc/codecs/
-	depmod -a $(kernel_version)
+	install -o root -m 644 snd-soc-wm8960.ko /lib/modules/$(KERNELRELEASE)/kernel/sound/soc/codecs/
+	install -o root -m 644 snd-soc-max9759.ko /lib/modules/$(KERNELRELEASE)/kernel/sound/soc/codecs/
+	install -o root -m 644 snd-soc-volume-gpio.ko /lib/modules/$(KERNELRELEASE)/kernel/sound/soc/codecs/
+	depmod -a $(KERNELRELEASE)
 	install -o root -m 644 tagtagtag-sound.dtbo /boot/overlays/
 	sed /boot/config.txt -i -e "s/^#dtparam=i2c_arm=on/dtparam=i2c_arm=on/"
 	grep -q -E "^dtparam=i2c_arm=on" /boot/config.txt || printf "dtparam=i2c_arm=on\n" >> /boot/config.txt
