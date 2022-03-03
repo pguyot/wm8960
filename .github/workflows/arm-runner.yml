@@ -5,9 +5,38 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        base_image: ['raspios_lite:2021-05-07', 'raspios_lite:2021-11-08', 'dietpi:rpi_armv6_bullseye']
-        cpu: [arm1176, cortex-a7]
+        target: [zero_raspbian, zero_raspios, zero_dietpi, zero2_raspios, zero2_dietpi, zero2_64_raspios, zero2_64_dietpi]
+        include:
+        - target: zero_raspbian
+          cpu: arm1176
+          cpu_info: cpuinfo/raspberrypi_zero_w
+          base_image: raspbian_lite:latest
+        - target: zero_raspios
+          cpu: arm1176
+          cpu_info: cpuinfo/raspberrypi_zero_w
+          base_image: raspios_lite:latest
+        - target: zero_dietpi
+          cpu: arm1176
+          cpu_info: cpuinfo/raspberrypi_zero_w
+          base_image: dietpi:rpi_armv6_bullseye
+        - target: zero2_raspios
+          cpu: cortex-a7
+          cpu_info: cpuinfo/raspberrypi_zero2_w
+          base_image: raspios_lite:latest
+        - target: zero2_dietpi
+          cpu: cortex-a7
+          cpu_info: cpuinfo/raspberrypi_zero2_w
+          base_image: dietpi:rpi_armv7_bullseye
+        - target: zero2_64_raspios
+          cpu: cortex-a53
+          cpu_info: cpuinfo/raspberrypi_zero2_w_arm64
+          base_image: raspios_lite_arm64:latest
+        - target: zero2_64_dietpi
+          cpu: cortex-a53
+          cpu_info: cpuinfo/raspberrypi_zero2_w_arm64
+          base_image: dietpi:rpi_armv8_bullseye
     steps:
     - uses: actions/checkout@v2
     - uses: pguyot/arm-runner-action@v2
@@ -17,10 +46,16 @@ jobs:
         cpu: ${{ matrix.cpu }}
         commands: |
             kernel_version=`apt list --installed | grep raspberrypi-kernel | awk '{ print $2 }' | sed -e 's|1:||g'`
-            wget -q http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/raspberrypi-kernel-headers_${kernel_version}_armhf.deb
-            dpkg --install raspberrypi-kernel-headers_${kernel_version}_armhf.deb
-            apt-get update -y
+            arch=`apt list --installed | grep raspberrypi-kernel | awk '{ print $3 }'`
+            wget -q http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/raspberrypi-kernel-headers_${kernel_version}_${arch}.deb
+            dpkg --install raspberrypi-kernel-headers_${kernel_version}_${arch}.deb
+            apt-get update -y --allow-releaseinfo-change
             apt-get install --no-install-recommends -y libasound2-dev make gcc libc6-dev
-            ls /lib/modules/*/build -la
-            make
-            make test
+            for builddir in /lib/modules/*/build ; do
+                parentdir=`dirname ${builddir}`
+                kernelrelease=`basename ${parentdir}`
+                make KERNELRELEASE=${kernelrelease}
+                sudo make install KERNELRELEASE=${kernelrelease}
+                make clean KERNELRELEASE=${kernelrelease}
+                make test KERNELRELEASE=${kernelrelease}
+            done

@@ -1,23 +1,22 @@
 # SPDX-License-Identifier: GPL-2.0
+KERNELRELEASE ?= $(shell uname -r)
+
 snd-soc-wm8960-objs := wm8960.o
 obj-m += snd-soc-wm8960.o
 dtbo-y += wm8960.dtbo
 
 targets += $(dtbo-y)
 always  := $(dtbo-y)
-kernel_img_gzip_offset := $(shell grep -m 1 -abo 'uncompression error' /boot/kernel.img | cut -d ':' -f 1)
-kernel_img_gzip_offset := $(shell expr $(kernel_img_gzip_offset) + 20)
-kernel_version := $(shell dd if=/boot/kernel.img skip=$(kernel_img_gzip_offset) iflag=skip_bytes of=/dev/stdout | zgrep -aPom1 'Linux version \K\S+')
 
 all:
-	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) modules
+	make -C /usr/src/linux-headers-$(KERNELRELEASE) M=$(shell pwd) modules
 
 clean:
-	make -C /usr/src/linux-headers-$(kernel_version) M=$(shell pwd) clean
+	make -C /usr/src/linux-headers-$(KERNELRELEASE) M=$(shell pwd) clean
 
 install: snd-soc-wm8960.ko wm8960.dtbo
-	cp snd-soc-wm8960.ko /lib/modules/$(shell uname -r)/kernel/sound/soc/codecs/
-	depmod -a
+	cp snd-soc-wm8960.ko /lib/modules/$(KERNELRELEASE)/kernel/sound/soc/codecs/
+	depmod -a $(KERNELRELEASE)
 	cp wm8960.dtbo /boot/overlays/
 	sed /boot/config.txt -i -e "s/^#dtparam=i2c_arm=on/dtparam=i2c_arm=on/"
 	grep -q -E "^dtparam=i2c_arm=on" /boot/config.txt || printf "dtparam=i2c_arm=on\n" >> /boot/config.txt
