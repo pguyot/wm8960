@@ -10,7 +10,7 @@ obj-m += snd-soc-volume-gpio.o
 dtbo-y += tagtagtag-sound.dtbo
 
 targets += $(dtbo-y)
-always  := $(dtbo-y)
+always-y := $(dtbo-y)
 
 all: tagtagtag-mixerd
 	make -C /usr/src/linux-headers-$(KERNELRELEASE) M=$(shell pwd) modules
