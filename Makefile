@@ -6,7 +6,13 @@ obj-m += snd-soc-wm8960.o
 dtbo-y += wm8960.dtbo
 
 targets += $(dtbo-y)
-always  := $(dtbo-y)
+
+# Gracefully supporting the new always-y without cutting off older target with kernel 4.x
+ifeq ($(firstword $(subst ., ,$(KERNELRELEASE))),4)
+	always := $(dtbo-y)
+else
+	always-y := $(dtbo-y)
+endif
 
 all:
 	make -C /usr/src/linux-headers-$(KERNELRELEASE) M=$(shell pwd) modules
