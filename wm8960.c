@@ -1352,7 +1352,11 @@ static struct snd_soc_dai_driver wm8960_dai = {
 		.rates = WM8960_RATES,
 		.formats = WM8960_FORMATS,},
 	.ops = &wm8960_dai_ops,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
 	.symmetric_rates = 1,
+#else
+	.symmetric_rate = 1,
+#endif
 };
 
 static int wm8960_probe(struct snd_soc_component *component)
