@@ -1383,7 +1383,9 @@ static const struct snd_soc_component_driver soc_component_dev_wm8960 = {
 	.idle_bias_on		= 1,
 	.use_pmdown_time	= 1,
 	.endianness		= 1,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,0,0)
 	.non_legacy_dai_naming	= 1,
+#endif
 };
 
 static const struct regmap_config wm8960_regmap = {
@@ -1473,9 +1475,15 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,0,0)
 static int wm8960_i2c_remove(struct i2c_client *client)
+#else
+static void wm8960_i2c_remove(struct i2c_client *client)
+#endif
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,0,0)
 	return 0;
+#endif
 }
 
 static const struct i2c_device_id wm8960_i2c_id[] = {
