@@ -45,10 +45,9 @@ jobs:
         base_image: ${{ matrix.base_image }}
         cpu: ${{ matrix.cpu }}
         commands: |
-            kernel_version=`apt list --installed | grep raspberrypi-kernel | awk '{ print $2 }' | sed -e 's|1:||g'`
-            arch=`apt list --installed | grep raspberrypi-kernel | awk '{ print $3 }'`
-            wget -q http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/raspberrypi-kernel-headers_${kernel_version}_${arch}.deb
-            dpkg --install raspberrypi-kernel-headers_${kernel_version}_${arch}.deb
+            kernel_headers_pkg=`apt-cache show raspberrypi-kernel-headers | sed -n -e 's|Filename: .*/||p'`
+            wget -q http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/${kernel_headers_pkg}
+            dpkg --install ${kernel_headers_pkg}
             apt-get update -y --allow-releaseinfo-change
             apt-get install --no-install-recommends -y libasound2-dev make gcc libc6-dev
             for builddir in /lib/modules/*/build ; do
