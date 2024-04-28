@@ -49,13 +49,14 @@ jobs:
         base_image: ${{ matrix.base_image }}
         cpu: ${{ matrix.cpu }}
         commands: |
+            apt-get update -y --allow-releaseinfo-change
             kernel_headers_pkg=`apt-cache show raspberrypi-kernel-headers | sed -n -e 's|Filename: .*/||p'`
             wget -q http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/${kernel_headers_pkg}
             dpkg --install ${kernel_headers_pkg}
-            apt-get update -y --allow-releaseinfo-change
             apt-get install --no-install-recommends -y libasound2-dev make gcc libc6-dev
             for builddir in /lib/modules/*/build ; do
                 parentdir=`dirname ${builddir}`
+                mkdir -p ${parentdir}/kernel/sound/soc/codecs/
                 kernelrelease=`basename ${parentdir}`
                 make KERNELRELEASE=${kernelrelease}
                 sudo make install KERNELRELEASE=${kernelrelease}

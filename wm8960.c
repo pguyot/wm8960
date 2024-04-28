@@ -749,7 +749,6 @@ static int wm8960_configure_clocking(struct snd_soc_component *component)
 {
 	struct wm8960_priv *wm8960 = snd_soc_component_get_drvdata(component);
 	int freq_out, freq_in;
-	u16 iface1 = snd_soc_component_read(component, WM8960_IFACE1);
 	int i, j, k;
 	int ret;
 
@@ -1412,8 +1411,12 @@ static void wm8960_set_pdata_from_of(struct i2c_client *i2c,
 		pdata->shared_lrclk = true;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0)
 static int wm8960_i2c_probe(struct i2c_client *i2c,
 			    const struct i2c_device_id *id)
+#else
+static int wm8960_i2c_probe(struct i2c_client *i2c)
+#endif
 {
 	struct wm8960_data *pdata = dev_get_platdata(&i2c->dev);
 	struct wm8960_priv *wm8960;
